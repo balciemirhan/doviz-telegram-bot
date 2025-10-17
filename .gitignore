@@ -1,0 +1,9 @@
+# Sanal ortam
+venv/
+
+# Python cache dosyaları
+__pycache__/
+*.pyc
+
+# Hassas ayar dosyası
+.env
