@@ -2,8 +2,8 @@
 import requests
 import logging
 import os
-import threading  # <-- İki işi aynı anda yapmak için eklendi
-from flask import Flask  # <-- Render için nöbetçi web sunucumuz eklendi
+import threading
+from flask import Flask
 from dotenv import load_dotenv
 from telegram import (
     Update,
@@ -26,9 +26,19 @@ from telegram.constants import ParseMode
 # .env dosyasındaki ortam değişkenlerini yüklüyoruz
 load_dotenv()
 
-# Token'ı GÜVENLİ bir şekilde ortam değişkenlerinden alıyoruz.
-TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
-PORT = int(os.environ.get("PORT", 8443))  # <-- Render'ın kullanacağı port
+# --- AKILLI TOKEN SEÇİMİ ---
+# Render gibi bir "production" ortamındaysak ana token'ı,
+# kendi bilgisayarımızdaysak (development) test token'ını kullanırız.
+IS_PRODUCTION = os.getenv("IS_PRODUCTION", "false").lower() == "true"
+
+if IS_PRODUCTION:
+    # Bu değişken Render'ın Environment kısmında ayarlı olmalı
+    TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+else:
+    # Bu değişken .env dosyasında ayarlı olmalı
+    TELEGRAM_TOKEN = os.getenv("DEV_TELEGRAM_TOKEN")
+
+PORT = int(os.environ.get("PORT", 8443))
 
 # Logging'i (hata takibi) etkinleştiriyoruz
 logging.basicConfig(
@@ -36,7 +46,7 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-# --- Sabitler --- (Değişiklik yok)
+# --- Sabitler ---
 BTN_DOVIZ = "💵 Döviz Kurları"
 BTN_MADEN = "⚜️ Kıymetli Madenler"
 CB_MENU_DOVIZ = "menu_doviz"
@@ -64,7 +74,7 @@ USD, EUR, GBP = "USD", "EUR", "GBP"
 )
 
 
-# --- Klavye Oluşturma Fonksiyonları --- (Değişiklik yok)
+# --- Klavye Oluşturma Fonksiyonları ---
 def create_persistent_keyboard():
     keyboard = [[KeyboardButton(BTN_DOVIZ), KeyboardButton(BTN_MADEN)]]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
@@ -119,13 +129,11 @@ def create_back_menu_keyboard(back_menu: str):
     )
 
 
-# --- Ana Veri Çekme Fonksiyonu --- (Değişiklik yok)
+# --- Ana Veri Çekme Fonksiyonu ---
 def get_market_data(data_code: str):
     try:
         url = "https://finans.truncgil.com/today.json"
-        headers = {
-            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36"
-        }
+        headers = {"User-Agent": "Mozilla/5.0"}
         response = requests.get(url, headers=headers, timeout=10)
         response.raise_for_status()
         all_data = response.json()
@@ -142,11 +150,14 @@ def get_market_data(data_code: str):
             ATA_ALTIN: "⚜️ Ata Altın",
             BILEZIK_22_AYAR: "⚜️ 22 Ayar Bilezik",
         }
+
         item_data = all_data.get(data_code)
         if not item_data:
             return helpers.escape_markdown(
                 f"{data_code} için veri bulunamadı.", version=2
             )
+
+        # Fiyatı al ve formatla
         name = display_names.get(data_code, data_code)
         name_escaped = helpers.escape_markdown(name, version=2)
         satis_fiyati_str = (
@@ -155,7 +166,22 @@ def get_market_data(data_code: str):
         satis_fiyati = helpers.escape_markdown(
             f"{float(satis_fiyati_str):.2f}", version=2
         )
-        return f"📊 *Güncel Piyasa Fiyatı* 📊\n\n{name_escaped}: *{satis_fiyati} ₺*"
+
+        # Günlük değişimi al ve formatla
+        degisim_str = item_data.get("Değişim", "%0,00")
+        degisim_float = float(degisim_str.replace("%", "").replace(",", "."))
+
+        emoji = "➖"
+        if degisim_float > 0:
+            emoji = "📈"
+            degisim_str = f"+{degisim_str}"
+        elif degisim_float < 0:
+            emoji = "📉"
+
+        degisim_escaped = helpers.escape_markdown(f"({emoji} {degisim_str})", version=2)
+
+        return f"📊 *Güncel Piyasa Fiyatı* 📊\n\n{name_escaped}: *{satis_fiyati} ₺* {degisim_escaped}"
+
     except Exception as e:
         logger.error(f"Veri çekme/işleme hatası: {e}")
         return helpers.escape_markdown(
@@ -163,7 +189,7 @@ def get_market_data(data_code: str):
         )
 
 
-# --- Bot Komut ve Buton İşleyicileri --- (Değişiklik yok)
+# --- Bot Komut ve Buton İşleyicileri ---
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await update.message.reply_markdown_v2(
@@ -225,7 +251,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
         )
 
 
-# --- YENİ EKLENEN KISIMLAR ---
+# --- Flask Sunucusu ve Ana Fonksiyon ---
 app = Flask(__name__)
 
 
@@ -238,19 +264,20 @@ def run_web_server():
     app.run(host="0.0.0.0", port=PORT)
 
 
-# --- ANA FONKSİYON GÜNCELLENDİ ---
 def main() -> None:
     if not TELEGRAM_TOKEN:
-        logger.error("Telegram API Token bulunamadı!")
+        logger.error(
+            "Telegram API Token bulunamadı! Lütfen .env veya Environment Variables kontrol edin."
+        )
         return
 
-    # ### DEĞİŞİKLİK BURADA BAŞLIYOR ###
-    # Önce basit işi yapacak olan Garson'u (Flask) işe alıp arka plana yolluyoruz.
+    # Önce basit iş olan web sunucusunu arka planda (garson) başlatıyoruz.
     web_server_thread = threading.Thread(target=run_web_server)
+    web_server_thread.daemon = True  # Ana program kapanınca bu da kapansın
     web_server_thread.start()
     logger.info("Nöbetçi Web Sunucusu arka planda başlatıldı...")
 
-    # Şimdi de en önemli işi yapacak olan Müdür'ü (Bot) ana görevde çalıştırıyoruz.
+    # Sonra ana işi, yani botu, ana görevde (müdür) çalıştırıyoruz.
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(callback_query_handler))
@@ -258,9 +285,10 @@ def main() -> None:
         MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler)
     )
 
-    logger.info("Bot ana thread'de başlatılıyor...")
+    logger.info(
+        f"Bot {'Production' if IS_PRODUCTION else 'Development'} modunda ana thread'de başlatılıyor..."
+    )
     application.run_polling()
-    # ### DEĞİŞİKLİK BURADA BİTİYOR ###
 
 
 if __name__ == "__main__":
