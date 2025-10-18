@@ -1,3 +1,6 @@
+
+![Chatbot](https://github.com/user-attachments/assets/fcb5942f-f038-47a7-9d9c-aba5b6ea3aed)
+
 # Döviz & Altın Takip Telegram Botu 🇹🇷
 
 ![Python](https://img.shields.io/badge/Python-3.10%2B-blue?style=for-the-badge&logo=python)
