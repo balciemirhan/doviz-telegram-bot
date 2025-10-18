@@ -132,7 +132,7 @@ def get_market_data(data_code: str):
         display_names = {
             USD: "💲 🇺🇸 Dolar (USD)",
             EUR: "💶 🇪🇺 Euro (EUR)",
-            GBP: "Pound; 🇬🇧 Sterlin (GBP)",
+            GBP: "💷 🇬🇧 Sterlin (GBP)",
             GUMUS: "🥈 Gram Gümüş",
             GRAM_ALTIN: "⚜️ Gram Altın",
             CEYREK_ALTIN: "⚜️ Çeyrek Altın",
@@ -225,10 +225,7 @@ async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_T
         )
 
 
-# --- YENİ EKLENEN KISIMLAR: Nöbetçi Asker (Flask) ve Ana Orkestra Şefi ---
-
-# 1. Nöbetçi Askerimiz: Flask Sunucusu
-# Render'ın "hayatta mısın?" kontrolüne cevap verecek.
+# --- YENİ EKLENEN KISIMLAR ---
 app = Flask(__name__)
 
 
@@ -238,17 +235,22 @@ def index():
 
 
 def run_web_server():
-    # Render'ın bize verdiği portu kullanıyoruz.
     app.run(host="0.0.0.0", port=PORT)
 
 
-# 2. Orkestra Şefi: Ana Fonksiyon
+# --- ANA FONKSİYON GÜNCELLENDİ ---
 def main() -> None:
     if not TELEGRAM_TOKEN:
-        logger.error("Telegram API Token bulunamadı! .env dosyasını kontrol edin.")
+        logger.error("Telegram API Token bulunamadı!")
         return
 
-    # Telegram botunu kur
+    # ### DEĞİŞİKLİK BURADA BAŞLIYOR ###
+    # Önce basit işi yapacak olan Garson'u (Flask) işe alıp arka plana yolluyoruz.
+    web_server_thread = threading.Thread(target=run_web_server)
+    web_server_thread.start()
+    logger.info("Nöbetçi Web Sunucusu arka planda başlatıldı...")
+
+    # Şimdi de en önemli işi yapacak olan Müdür'ü (Bot) ana görevde çalıştırıyoruz.
     application = Application.builder().token(TELEGRAM_TOKEN).build()
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(callback_query_handler))
@@ -256,15 +258,9 @@ def main() -> None:
         MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler)
     )
 
-    # Botu ayrı bir iş parçacığında (thread) başlat
-    # Bu sayede hem bot hem de web sunucusu birbirini engellemeden çalışabilir.
-    bot_thread = threading.Thread(target=application.run_polling)
-    bot_thread.start()
-
-    logger.info("Bot başarıyla başlatıldı ve Polling yapıyor...")
-
-    # Ana iş parçacığında ise web sunucusunu çalıştır
-    run_web_server()
+    logger.info("Bot ana thread'de başlatılıyor...")
+    application.run_polling()
+    # ### DEĞİŞİKLİK BURADA BİTİYOR ###
 
 
 if __name__ == "__main__":
