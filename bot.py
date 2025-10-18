@@ -2,6 +2,8 @@
 import requests
 import logging
 import os
+import threading  # <-- İki işi aynı anda yapmak için eklendi
+from flask import Flask  # <-- Render için nöbetçi web sunucumuz eklendi
 from dotenv import load_dotenv
 from telegram import (
     Update,
@@ -26,6 +28,7 @@ load_dotenv()
 
 # Token'ı GÜVENLİ bir şekilde ortam değişkenlerinden alıyoruz.
 TELEGRAM_TOKEN = os.getenv("TELEGRAM_TOKEN")
+PORT = int(os.environ.get("PORT", 8443))  # <-- Render'ın kullanacağı port
 
 # Logging'i (hata takibi) etkinleştiriyoruz
 logging.basicConfig(
@@ -33,44 +36,41 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-
-# --- Sabitler ---
-# Kalıcı Klavye Buton Metinleri
+# --- Sabitler --- (Değişiklik yok)
 BTN_DOVIZ = "💵 Döviz Kurları"
 BTN_MADEN = "⚜️ Kıymetli Madenler"
-
-# Callback Data (Mesaj İçi Buton Kimlikleri)
 CB_MENU_DOVIZ = "menu_doviz"
 CB_MENU_METAL = "menu_metal"
 CB_MENU_ALTIN_CESITLERI = "menu_altin_cesitleri"
-# CB_START_OVER SABİTİ GEREKSİZ OLDUĞU İÇİN KALDIRILDI
+USD, EUR, GBP = "USD", "EUR", "GBP"
+(
+    GUMUS,
+    GRAM_ALTIN,
+    CEYREK_ALTIN,
+    YARIM_ALTIN,
+    TAM_ALTIN,
+    CUMHURIYET_ALTINI,
+    ATA_ALTIN,
+    BILEZIK_22_AYAR,
+) = (
+    "gumus",
+    "gram-altin",
+    "ceyrek-altin",
+    "yarim-altin",
+    "tam-altin",
+    "cumhuriyet-altini",
+    "ata-altin",
+    "22-ayar-bilezik",
+)
 
-# Veri Butonları
-USD = "USD"
-EUR = "EUR"
-GBP = "GBP"
-GUMUS = "gumus"
-GRAM_ALTIN = "gram-altin"
-CEYREK_ALTIN = "ceyrek-altin"
-YARIM_ALTIN = "yarim-altin"
-TAM_ALTIN = "tam-altin"
-CUMHURIYET_ALTINI = "cumhuriyet-altini"
-ATA_ALTIN = "ata-altin"
-BILEZIK_22_AYAR = "22-ayar-bilezik"
 
-
-# --- Klavye Oluşturma Fonksiyonları ---
-
-
-def create_persistent_keyboard() -> ReplyKeyboardMarkup:
-    """Sohbetin altında kalıcı olarak duran ana menü klavyesini oluşturur."""
+# --- Klavye Oluşturma Fonksiyonları --- (Değişiklik yok)
+def create_persistent_keyboard():
     keyboard = [[KeyboardButton(BTN_DOVIZ), KeyboardButton(BTN_MADEN)]]
     return ReplyKeyboardMarkup(keyboard, resize_keyboard=True)
 
 
-def create_doviz_menu_keyboard() -> InlineKeyboardMarkup:
-    """Döviz alt menüsü (mesaj içi) klavyesini oluşturur."""
-    # "Ana Menü" butonu kaldırıldı
+def create_doviz_menu_keyboard():
     keyboard = [
         [
             InlineKeyboardButton("🇺🇸 Dolar", callback_data=USD),
@@ -81,9 +81,7 @@ def create_doviz_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-def create_metal_menu_keyboard() -> InlineKeyboardMarkup:
-    """Kıymetli madenler ana menüsünü (mesaj içi) oluşturur."""
-    # "Ana Menü" butonu kaldırıldı
+def create_metal_menu_keyboard():
     keyboard = [
         [
             InlineKeyboardButton(
@@ -95,8 +93,7 @@ def create_metal_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-def create_altin_cesitleri_menu_keyboard() -> InlineKeyboardMarkup:
-    """Tüm altın çeşitlerini listeleyen alt menüyü (mesaj içi) oluşturur."""
+def create_altin_cesitleri_menu_keyboard():
     keyboard = [
         [
             InlineKeyboardButton("Gram Altın", callback_data=GRAM_ALTIN),
@@ -116,16 +113,14 @@ def create_altin_cesitleri_menu_keyboard() -> InlineKeyboardMarkup:
     return InlineKeyboardMarkup(keyboard)
 
 
-def create_back_menu_keyboard(back_menu: str) -> InlineKeyboardMarkup:
-    """Sadece 'Geri' butonunu içeren bir klavye oluşturur."""
-    # "Ana Menü" butonu kaldırıldı
+def create_back_menu_keyboard(back_menu: str):
     return InlineKeyboardMarkup(
         [[InlineKeyboardButton("↩️ Geri", callback_data=back_menu)]]
     )
 
 
 # --- Ana Veri Çekme Fonksiyonu --- (Değişiklik yok)
-def get_market_data(data_code: str) -> str:
+def get_market_data(data_code: str):
     try:
         url = "https://finans.truncgil.com/today.json"
         headers = {
@@ -137,7 +132,7 @@ def get_market_data(data_code: str) -> str:
         display_names = {
             USD: "💲 🇺🇸 Dolar (USD)",
             EUR: "💶 🇪🇺 Euro (EUR)",
-            GBP: "💷 🇬🇧 Sterlin (GBP)",
+            GBP: "Pound; 🇬🇧 Sterlin (GBP)",
             GUMUS: "🥈 Gram Gümüş",
             GRAM_ALTIN: "⚜️ Gram Altın",
             CEYREK_ALTIN: "⚜️ Çeyrek Altın",
@@ -161,29 +156,23 @@ def get_market_data(data_code: str) -> str:
             f"{float(satis_fiyati_str):.2f}", version=2
         )
         return f"📊 *Güncel Piyasa Fiyatı* 📊\n\n{name_escaped}: *{satis_fiyati} ₺*"
-    except requests.exceptions.RequestException as e:
-        logger.error(f"API isteği sırasında hata: {e}")
-        return helpers.escape_markdown("😕 Piyasa verilerine ulaşılamıyor.", version=2)
     except Exception as e:
-        logger.error(f"Veri işlenirken hata: {e}")
-        return helpers.escape_markdown("Veriler işlenirken hata oluştu.", version=2)
+        logger.error(f"Veri çekme/işleme hatası: {e}")
+        return helpers.escape_markdown(
+            "😕 Verilere ulaşılamadı veya işlenemedi.", version=2
+        )
 
 
-# --- Bot Komut ve Buton İşleyicileri ---
-
-
-async def start(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """/start komutu verildiğinde kullanıcıyı karşılar ve kalıcı menüyü gösterir."""
+# --- Bot Komut ve Buton İşleyicileri --- (Değişiklik yok)
+async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.effective_user
     await update.message.reply_markdown_v2(
-        f"Merhaba {user.mention_markdown_v2()}\\! 👋\n\n"
-        f"Güncel piyasa verileri için aşağıdaki menüyü kullanabilirsiniz\\.",
+        f"Merhaba {user.mention_markdown_v2()}\\! 👋\n\nGüncel piyasa verileri için aşağıdaki menüyü kullanabilirsiniz\\.",
         reply_markup=create_persistent_keyboard(),
     )
 
 
-async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) -> None:
-    """Kalıcı klavyeden gelen metin mesajlarını işler ve ilgili mesaj içi menüyü açar."""
+async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = update.message.text
     if text == BTN_DOVIZ:
         await update.message.reply_text(
@@ -194,24 +183,16 @@ async def message_handler(update: Update, context: ContextTypes.DEFAULT_TYPE) ->
             "Lütfen bir maden türü seçin:", reply_markup=create_metal_menu_keyboard()
         )
     else:
-        # Tanımlanmayan bir metin gelirse, ana menüyü hatırlat
         await update.message.reply_text(
             "Lütfen aşağıdaki menüden bir işlem seçin.",
             reply_markup=create_persistent_keyboard(),
         )
 
 
-async def callback_query_handler(
-    update: Update, context: ContextTypes.DEFAULT_TYPE
-) -> None:
-    """Mesaj içi (inline) buton tıklamalarını yönetir."""
+async def callback_query_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     choice = query.data
-
-    # "Ana Menü" butonu kaldırıldığı için o bölüm de silindi.
-
-    # Menü yönlendirmeleri
     if choice == CB_MENU_DOVIZ:
         await query.edit_message_text(
             text="Lütfen bir döviz kuru seçin:",
@@ -227,13 +208,9 @@ async def callback_query_handler(
             text="Lütfen bir altın türü seçin:",
             reply_markup=create_altin_cesitleri_menu_keyboard(),
         )
-
-    # Veri getirme işlemleri
     else:
         await query.edit_message_text(text="Veriler alınıyor, lütfen bekleyin...")
         price_data = get_market_data(data_code=choice)
-
-        # Geri butonunun doğru menüye dönmesini sağlayan mantık
         back_menu = None
         if choice in [USD, EUR, GBP]:
             back_menu = CB_MENU_DOVIZ
@@ -241,7 +218,6 @@ async def callback_query_handler(
             back_menu = CB_MENU_METAL
         else:
             back_menu = CB_MENU_ALTIN_CESITLERI
-
         await query.edit_message_text(
             text=price_data,
             reply_markup=create_back_menu_keyboard(back_menu),
@@ -249,24 +225,47 @@ async def callback_query_handler(
         )
 
 
+# --- YENİ EKLENEN KISIMLAR: Nöbetçi Asker (Flask) ve Ana Orkestra Şefi ---
+
+# 1. Nöbetçi Askerimiz: Flask Sunucusu
+# Render'ın "hayatta mısın?" kontrolüne cevap verecek.
+app = Flask(__name__)
+
+
+@app.route("/")
+def index():
+    return "Bot çalışıyor..."
+
+
+def run_web_server():
+    # Render'ın bize verdiği portu kullanıyoruz.
+    app.run(host="0.0.0.0", port=PORT)
+
+
+# 2. Orkestra Şefi: Ana Fonksiyon
 def main() -> None:
     if not TELEGRAM_TOKEN:
         logger.error("Telegram API Token bulunamadı! .env dosyasını kontrol edin.")
         return
 
+    # Telegram botunu kur
     application = Application.builder().token(TELEGRAM_TOKEN).build()
-
     application.add_handler(CommandHandler("start", start))
     application.add_handler(CallbackQueryHandler(callback_query_handler))
     application.add_handler(
         MessageHandler(filters.TEXT & ~filters.COMMAND, message_handler)
     )
 
-    logger.info("Bot başarıyla başlatıldı...")
-    application.run_polling()
+    # Botu ayrı bir iş parçacığında (thread) başlat
+    # Bu sayede hem bot hem de web sunucusu birbirini engellemeden çalışabilir.
+    bot_thread = threading.Thread(target=application.run_polling)
+    bot_thread.start()
+
+    logger.info("Bot başarıyla başlatıldı ve Polling yapıyor...")
+
+    # Ana iş parçacığında ise web sunucusunu çalıştır
+    run_web_server()
 
 
 if __name__ == "__main__":
     main()
-
-
