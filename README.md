@@ -11,7 +11,7 @@ Bu proje, Türkiye piyasaları için anlık döviz ve kıymetli maden verilerini
 
 Botu canlı olarak denemek ve kullanmak için aşağıdaki linke tıklayabilirsiniz:
 
-**[👉 Buraya Tıklayarak Bota Ulaşabilirsiniz!](https://t.me/SENIN_BOTUNUN_KULLANICI_ADI)**
+**[👉 Buraya Tıklayarak Bota Ulaşabilirsiniz!](https://t.me/@DovizTakip_bot)**
 
 *(Not: `SENIN_BOTUNUN_KULLANICI_ADI` kısmını kendi botunun kullanıcı adıyla değiştirmeyi unutma!)*
 
