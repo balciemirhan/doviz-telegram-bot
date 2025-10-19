@@ -1,4 +1,3 @@
-
 ![Chatbot](https://github.com/user-attachments/assets/fcb5942f-f038-47a7-9d9c-aba5b6ea3aed)
 
 # Döviz & Altın Takip Telegram Botu 🇹🇷
@@ -24,8 +23,8 @@ Botu canlı olarak denemek ve kullanmak için aşağıdaki linke tıklayabilirsi
 - **Günlük Değişim Yüzdesi:** Her varlığın fiyatının yanında, o günkü artış veya azalış yüzdesini `(📈 +0.75%)` veya `(📉 -0.25%)` şeklinde gösterir.
 - **Geniş Varlık Yelpazesi:** Döviz kurlarının yanı sıra, en çok takip edilen altın çeşitleri ve gümüş fiyatlarını içerir.
 - **İnteraktif Menüler:**
-    - **Kalıcı Klavye:** Sohbet ekranının altında her zaman duran ana menü butonları.
-    - **Mesaj İçi Butonlar:** Alt menüler ve geri butonları ile kolay ve sezgisel bir gezinme deneyimi.
+  - **Kalıcı Klavye:** Sohbet ekranının altında her zaman duran ana menü butonları.
+  - **Mesaj İçi Butonlar:** Alt menüler ve geri butonları ile kolay ve sezgisel bir gezinme deneyimi.
 
 ---
 
@@ -42,6 +41,20 @@ Bu projenin hayata geçirilmesinde aşağıdaki teknolojiler ve kütüphaneler k
 
 ---
 
+```bash
+doviz-telegram-bot/
+├── bot.py             # <-- Ana dosya, SADECE botu başlatır (Orkestra Şefi).
+├── config.py          # <-- Tüm ayarları ve token'ları yönetir.
+├── constants.py       # <-- Tüm sabit metinleri ve kodları barındırır.
+├── data_fetcher.py    # <-- İnternetten veri çekme işini yapar.
+├── handlers.py        # <-- Kullanıcıdan gelen tüm komut ve butonları karşılar.
+├── keyboards.py       # <-- Telegram'daki tüm butonları oluşturur.
+├── .env               # <-- Gizli anahtarları (token) saklar.
+└── requirements.txt   # <-- Gerekli Python kütüphanelerini listeler.
+```
+
+---
+
 ## 🏗️ Mimari ve Yayınlama Süreci (Pipeline)
 
 Bu bot, sürekli ve kesintisiz çalışabilmesi için özel bir "hile" mekanizması üzerine kurulmuştur. İşte bu mekanizmanın adım adım işleyişi:
@@ -55,14 +68,17 @@ Telegram botları, "polling" yöntemiyle çalıştıkları için sürekli aktif 
 Bu sorunu aşmak için 3 aşamalı bir sistem kurduk:
 
 #### 1. Nöbetçi Asker: Flask 💂
+
 - **Neden?** Render'ın "Web Service" planını kandırmak için.
 - **Nasıl?** Kodun içine, dışarıdan bir istek geldiğinde sadece "Bot çalışıyor..." diyen çok basit bir Flask web sunucusu ekledik. Render, bu adresi kontrol ettiğinde bir web sitesinin çalıştığını sanır ve mutlu olur. Bu sırada asıl işi yapan Telegram botu, arka planda çalışmaya devam eder.
 
 #### 2. Uyku Engelleyici: UptimeRobot ⏰
+
 - **Neden?** Render'ın, 15 dakika boyunca hiç istek almayan web servislerini "uyku moduna" almasını engellemek için.
 - **Nasıl?** UptimeRobot adında ücretsiz bir servis, her 5 dakikada bir bizim Flask "nöbetçimizin" adresine bir istek gönderir. Bu, Render'ın "Bu site sürekli kullanılıyor" sanmasını sağlar ve botun uykuya dalmasını **kalıcı olarak engeller.**
 
 #### 3. Orkestra Şefi: Threading 🎻
+
 - **Neden?** Hem Flask web sunucusunun (Nöbetçi) hem de Telegram botunun (Asıl İşçi) aynı anda, birbirini engellemeden çalışabilmesi için.
 - **Nasıl?** Ana program (Müdür), en önemli iş olan Telegram botunu yönetirken; daha basit bir iş olan web sunucusunu arka planda çalışan bir "garsona" (`threading.Thread`) devreder.
 
@@ -79,12 +95,14 @@ Ve döngü: `⏰ (UptimeRobot her 5 dk'da bir)` -> `☁️ (Render'a Ping Atar)`
 Bu projeyi kendi bilgisayarınızda denemek isterseniz:
 
 1.  **Projeyi Klonlayın:**
+
     ```bash
     git clone [https://github.com/balciemirhan/doviz-telegram-bot.git](https://github.com/balciemirhan/doviz-telegram-bot.git)
     cd doviz-telegram-bot
     ```
 
 2.  **Sanal Ortam Oluşturun ve Aktif Edin:**
+
     ```bash
     python -m venv venv
     # Windows için:
@@ -94,11 +112,13 @@ Bu projeyi kendi bilgisayarınızda denemek isterseniz:
     ```
 
 3.  **Gerekli Kütüphaneleri Yükleyin:**
+
     ```bash
     pip install -r requirements.txt
     ```
 
 4.  **Ortam Değişkenlerini Ayarlayın:**
+
     - Proje ana dizininde `.env` adında bir dosya oluşturun.
     - İçine test için kullanacağınız botun token'ını ekleyin:
       ```
