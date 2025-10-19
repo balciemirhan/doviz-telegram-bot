@@ -41,6 +41,10 @@ Bu projenin hayata geçirilmesinde aşağıdaki teknolojiler ve kütüphaneler k
 
 ---
 
+## 📂 Klasör Yapısı (Folder Structure)
+
+Proje, okunabilirliği ve sürdürülebilirliği artırmak için modüler bir yapıya sahiptir. Her dosyanın belirli bir sorumluluğu vardır:
+
 ```bash
 doviz-telegram-bot/
 ├── bot.py             # <-- Ana dosya, SADECE botu başlatır (Orkestra Şefi).
