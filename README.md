@@ -21,10 +21,12 @@ Botu canlı olarak denemek ve kullanmak için aşağıdaki linke tıklayabilirsi
 
 - **Anlık Fiyatlar:** Dolar, Euro, Sterlin gibi popüler döviz kurları ile Gram, Çeyrek, Cumhuriyet Altını gibi kıymetli madenlerin en güncel alış ve satış fiyatları.
 - **Günlük Değişim Yüzdesi:** Her varlığın fiyatının yanında, o günkü artış veya azalış yüzdesini `(📈 +0.75%)` veya `(📉 -0.25%)` şeklinde gösterir.
+- **Doğal Dil Anlama (Temel Seviye) 💬:** Butonlara basmak yerine, "dolar kaç para?" veya "çeyrek altın" gibi ifadeleri doğrudan sohbete yazarak anında fiyat bilgisi alabilirsiniz.
 - **Geniş Varlık Yelpazesi:** Döviz kurlarının yanı sıra, en çok takip edilen altın çeşitleri ve gümüş fiyatlarını içerir.
 - **İnteraktif Menüler:**
-  - **Kalıcı Klavye:** Sohbet ekranının altında her zaman duran ana menü butonları.
-  - **Mesaj İçi Butonlar:** Alt menüler ve geri butonları ile kolay ve sezgisel bir gezinme deneyimi.
+    - **Kalıcı Klavye:** Sohbet ekranının altında her zaman duran ana menü butonları.
+    - **Mesaj İçi Butonlar:** Alt menüler ve geri butonları ile kolay ve sezgisel bir gezinme deneyimi.
+
 
 ---
 
