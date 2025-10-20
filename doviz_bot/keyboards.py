@@ -1,12 +1,12 @@
 # keyboards.py
-
+# <-- Telegram'daki tüm butonları oluşturur.
 from telegram import (
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
     ReplyKeyboardMarkup,
 )
-import constants as c
+from . import constants as c
 
 
 def create_persistent_keyboard() -> ReplyKeyboardMarkup:

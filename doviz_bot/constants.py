@@ -1,4 +1,5 @@
 # constants.py
+# <-- Tüm sabit metinleri ve kodları barındırır.
 
 # --- Kalıcı Klavye Buton Metinleri ---
 BTN_DOVIZ = "💵 Döviz Kurları"

@@ -1,4 +1,7 @@
 # bot.py
+# Bu, projenin ana giriş noktasıdır (entry point).
+# Görevi, diğer modüllerdeki parçaları (handlers, config vb.) bir araya getirmek,
+# Flask sunucusunu ve Telegram botunu başlatmaktır.
 
 import threading
 from flask import Flask
@@ -11,8 +14,8 @@ from telegram.ext import (
 )
 
 # Kendi oluşturduğumuz modülleri içe aktarıyoruz
-import config
-import handlers
+import doviz_bot.config as config
+import doviz_bot.handlers as handlers
 
 # --- Flask Sunucusu (Render Hilesi) ---
 app = Flask(__name__)

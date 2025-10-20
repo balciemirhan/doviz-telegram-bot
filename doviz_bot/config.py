@@ -1,4 +1,5 @@
 # config.py
+# <-- Tüm ayarları ve token'ları yönetir.
 
 import os
 import logging

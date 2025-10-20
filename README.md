@@ -48,13 +48,18 @@ Proje, okunabilirliği ve sürdürülebilirliği artırmak için modüler bir ya
 ```bash
 doviz-telegram-bot/
 ├── bot.py             # <-- Ana dosya, SADECE botu başlatır (Orkestra Şefi).
-├── config.py          # <-- Tüm ayarları ve token'ları yönetir.
-├── constants.py       # <-- Tüm sabit metinleri ve kodları barındırır.
-├── data_fetcher.py    # <-- İnternetten veri çekme işini yapar.
-├── handlers.py        # <-- Kullanıcıdan gelen tüm komut ve butonları karşılar.
-├── keyboards.py       # <-- Telegram'daki tüm butonları oluşturur.
 ├── .env               # <-- Gizli anahtarları (token) saklar.
-└── requirements.txt   # <-- Gerekli Python kütüphanelerini listeler.
+├── .gitignore         # <-- Git tarafından takip edilmeyecek dosyaları listeler.
+├── README.md          # <-- Proje hakkında genel bilgileri içerir.
+├── requirements.txt   # <-- Gerekli Python kütüphanelerini listeler.
+└── doviz_bot/         # <-- Ana uygulama paketi (Çekmece).
+    ├── __init__.py    # <-- Bu klasörün bir Python paketi olduğunu belirtir (Boş kalabilir).
+    ├── config.py      # <-- Tüm ayarları, ortam değişkenlerini ve token'ları yönetir.
+    ├── constants.py   # <-- Tüm sabit metinleri, buton kimliklerini ve kodları barındırır.
+    ├── data_fetcher.py # <-- İnternetten veri çekme ve formatlama işini yapar.
+    ├── handlers.py    # <-- Kullanıcıdan gelen tüm komut, mesaj ve butonları karşılar.
+    ├── keyboards.py   # <-- Telegram'daki tüm butonları ve menüleri oluşturur.
+    └── nlp_processor.py # <-- Kullanıcı metnini analiz eden NLP yardımcı aracını içerir.
 ```
 
 ---

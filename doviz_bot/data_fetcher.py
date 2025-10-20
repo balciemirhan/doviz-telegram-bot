@@ -1,9 +1,9 @@
 # data_fetcher.py
-
+# <-- İnternetten veri çekme işini yapar.
 import requests
 from telegram import helpers
-import constants as c
-from config import logger
+from . import constants as c
+from .config import logger
 
 
 def get_market_data(data_code: str):
